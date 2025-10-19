@@ -1,83 +1,49 @@
-
-
 workflows:
-
-  my-workflow:
-
-    name: My workflow name
-
-    labels:
-
-      - QA
-
-      - ${TENANT_NAME}
-
+  dynamic-tenant-build:
+    name: Dynamic tenant workflow
     instance_type: mac_mini_m2
-
     max_build_duration: 60
 
-    inputs: # more information about build inputs:https://docs.codemagic.io/knowledge-codemagic/build-inputs/
-
-      name: # input ID
-
-        description: Input description
-
-        default: Codemagic
-
     environment:
-
       groups:
-
         - group_name
-
       vars:
-
         PUBLIC_ENV_VAR: "value here"
-
+        TENANT_NAME: "default_tenant" # fallback nếu không có input
       flutter: stable
-
       xcode: latest
 
     cache:
-
       cache_paths:
-
         - ~/.pub-cache
 
     triggering:
-
       events:
-
         - push
-
       branch_patterns:
-
         - pattern: '*'
-
           include: true
-
           source: true
 
-      cancel_previous_builds: false
-
     scripts:
+      # ✅ Hiển thị thông tin môi trường và "label logic"
+      - echo "🚀 Building for tenant: ${TENANT_NAME}"
+      - echo "Assigning virtual label: QA_${TENANT_NAME}"
 
-      - echo "Hello, ${{ inputs.name }}"
+      # ✅ Lưu thông tin tenant để sử dụng sau build
+      - echo "TENANT=${TENANT_NAME}" > build_metadata.txt
 
-      - ...
+      # ✅ Ví dụ build Flutter
+      - flutter pub get
+      - flutter build apk --release
 
     artifacts:
-
-      - build/**/outputs/bundle/**/*.aab
+      - build/**/outputs/flutter-apk/*.apk
+      - build_metadata.txt
 
     publishing:
-
       email:
-
         recipients:
-
           - name@example.com
-
       scripts:
-
-        - echo 'Post-publish script'
+        - echo "🏁 Build completed for tenant: ${TENANT_NAME}"
